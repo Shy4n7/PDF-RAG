@@ -7,7 +7,7 @@ Built as a first RAG implementation to understand the full pipeline: ingestion, 
 I specifically set it up to read a PDF about **AdroIT Technologies** (an IT training company), index it using a local FAISS database, and generate answers using the Google Gemini API.
 
 ## How it works (under the hood)
-1. **Document Loading:** Reads `data/AdroIT_Technologies_Info.pdf` using LlamaIndex's directory reader.
+1. **Document Loading:** Reads `data/.pdf` using LlamaIndex's directory reader.
 2. **Text Chunking:** Splits the document pages into small, overlapping chunks (512 tokens size, 50 tokens overlap) so the AI gets the right context.
 3. **Local Vector Embeddings:** Uses the open-source `sentence-transformers/all-MiniLM-L6-v2` model to generate 384-dimensional vector representations of our text.
 4. **FAISS Vector Store:** Stores these vectors in a local flat Index (`faiss-cpu`) to do quick similarity searches and pull the top 3 matches for our query.
