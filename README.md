@@ -1,4 +1,4 @@
-PDF RAG Chatbot
+## PDF RAG Chatbot
 
 A terminal-based Retrieval-Augmented Generation (RAG) chatbot built in Python. Load any PDF, embed it locally, and chat with it using Google Gemini as the language model.
 
