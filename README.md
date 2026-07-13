@@ -21,7 +21,7 @@ The following diagram illustrates the flow of data through the RAG pipeline, fro
 
 ```mermaid
 flowchart TD
-    A[data/AdroIT_Technologies_Info.pdf] -->|SimpleDirectoryReader| B[Document Text]
+    A[data/.pdf] -->|SimpleDirectoryReader| B[Document Text]
     B -->|SentenceSplitter: 512 size / 50 overlap| C[Text Chunks]
     C -->|sentence-transformers/all-MiniLM-L6-v2| D[Embeddings: 384d]
     D -->|Ingest| E[(FAISS Vector Store)]
