@@ -1,0 +1,9 @@
+llama-index
+llama-index-embeddings-huggingface
+llama-index-vector-stores-faiss
+llama-index-llms-gemini
+faiss-cpu
+sentence-transformers
+pypdf
+llama-index-readers-file
+python-dotenv
