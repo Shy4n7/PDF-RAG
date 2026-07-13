@@ -15,6 +15,27 @@ I specifically set it up to read a PDF about **AdroIT Technologies** (an IT trai
 
 ---
 
+## System Architecture
+
+The following diagram illustrates the flow of data through the RAG pipeline, from ingestion to generation:
+
+```mermaid
+flowchart TD
+    A[data/AdroIT_Technologies_Info.pdf] -->|SimpleDirectoryReader| B[Document Text]
+    B -->|SentenceSplitter: 512 size / 50 overlap| C[Text Chunks]
+    C -->|sentence-transformers/all-MiniLM-L6-v2| D[Embeddings: 384d]
+    D -->|Ingest| E[(FAISS Vector Store)]
+    
+    F[User Query] -->|Embed| G[Query Vector]
+    G -->|Similarity Search| E
+    E -->|Retrieve Top 3 Chunks| H[Context Chunks]
+    
+    H & F -->|Prompt Formulation| I[gemini-3.1-flash-lite]
+    I -->|Generate Response| J[Terminal Output]
+```
+
+---
+
 ## Quick Start (How to Run it)
 
 1. **Install requirements:**
