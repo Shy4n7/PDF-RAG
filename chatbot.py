@@ -43,7 +43,7 @@ while True:
             
         print("Thinking...")
         response = query_engine.query(user_query)
-        print(f"\nGemini: {response.response}\n")
+        print(f"\nChatBot: {response.response}\n")
         print("-" * 50)
         
     except EOFError:
