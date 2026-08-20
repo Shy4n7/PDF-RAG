@@ -1,3 +1,7 @@
+<img width="1774" height="887" alt="ChatGPT Image Aug 20, 2026, 03_27_10 PM" src="https://github.com/user-attachments/assets/6e52ae59-b1c5-4f55-a728-8e2d4675757e" />
+
+
+
 ## PDF RAG Chatbot
 
 A terminal-based Retrieval-Augmented Generation (RAG) chatbot built in Python. Load any PDF, embed it locally, and chat with it using Google Gemini as the language model.
