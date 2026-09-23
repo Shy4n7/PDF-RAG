@@ -9,3 +9,4 @@ sentence-transformers
 pypdf
 llama-index-readers-file
 python-dotenv
+slowapi

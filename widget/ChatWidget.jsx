@@ -1,5 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 
+const STARTER_PROMPTS = [
+  "What courses do you offer?",
+  "Tell me about placements",
+  "What is the course duration?",
+  "Company overview"
+];
+
 const ChatWidget = ({
   apiUrl = 'http://localhost:8000',
   title = 'AdroBot',
@@ -10,6 +17,7 @@ const ChatWidget = ({
   const [messages, setMessages] = useState([
     { id: 'welcome', role: 'assistant', text: greeting }
   ]);
+  const [showPills, setShowPills] = useState(true);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
 
@@ -26,35 +34,92 @@ const ChatWidget = ({
     }
   }, [isOpen]);
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    const cleanText = input.trim();
+  const sendQuery = async (queryText) => {
+    const cleanText = queryText.trim();
     if (!cleanText || isSending) return;
 
-    const userMessage = { id: `user-${Date.now()}`, role: 'user', text: cleanText };
-    setMessages((prev) => [...prev, userMessage]);
+    setShowPills(false);
+    const userMessageId = `user-${Date.now()}`;
+    const assistantMessageId = `assistant-${Date.now()}`;
+
+    setMessages((prev) => [
+      ...prev,
+      { id: userMessageId, role: 'user', text: cleanText }
+    ]);
     setInput('');
     setIsSending(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/chat`, {
+      const response = await fetch(`${apiUrl}/api/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: cleanText })
       });
-      const data = await response.json();
 
-      if (response.ok && data.answer) {
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        setIsSending(false);
         setMessages((prev) => [
           ...prev,
-          { id: `assistant-${Date.now()}`, role: 'assistant', text: data.answer }
+          {
+            id: assistantMessageId,
+            role: 'assistant',
+            text: errData.detail || 'Unable to generate an answer. Please try again.',
+            isError: true
+          }
         ]);
-      } else {
-        const errorDetail = data.detail || 'Unable to generate an answer. Please try again.';
-        setMessages((prev) => [
-          ...prev,
-          { id: `err-${Date.now()}`, role: 'assistant', text: errorDetail, isError: true }
-        ]);
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamStarted = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+
+          const payloadStr = trimmed.slice(5).trim();
+          if (payloadStr === '[DONE]') continue;
+
+          try {
+            const data = JSON.parse(payloadStr);
+            if (data.token) {
+              if (!streamStarted) {
+                streamStarted = true;
+                setIsSending(false);
+                setMessages((prev) => [
+                  ...prev,
+                  { id: assistantMessageId, role: 'assistant', text: data.token }
+                ]);
+              } else {
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, text: msg.text + data.token }
+                      : msg
+                  )
+                );
+              }
+            } else if (data.error) {
+              setIsSending(false);
+              setMessages((prev) => [
+                ...prev,
+                { id: `err-${Date.now()}`, role: 'assistant', text: data.error, isError: true }
+              ]);
+            }
+          } catch (e) {
+          }
+        }
       }
     } catch (err) {
       setMessages((prev) => [
@@ -71,8 +136,14 @@ const ChatWidget = ({
     }
   };
 
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    sendQuery(input);
+  };
+
   const handleReset = () => {
     setMessages([{ id: 'welcome', role: 'assistant', text: greeting }]);
+    setShowPills(true);
     setInput('');
   };
 
@@ -142,6 +213,23 @@ const ChatWidget = ({
         @keyframes adroBounce {
           0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
           40% { transform: scale(1.1); opacity: 1; }
+        }
+        .adro-pill-btn {
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          color: #0f172a;
+          padding: 7px 12px;
+          border-radius: 9999px;
+          font-size: 12.5px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .adro-pill-btn:hover {
+          background: #eff6ff;
+          border-color: #2563eb;
+          color: #2563eb;
+          transform: translateY(-1px);
         }
         @media (max-width: 480px) {
           .adro-widget-window {
@@ -251,6 +339,21 @@ const ChatWidget = ({
             );
           })}
 
+          {showPills && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '4px 0 8px 0' }}>
+              {STARTER_PROMPTS.map((promptText) => (
+                <button
+                  key={promptText}
+                  type="button"
+                  className="adro-pill-btn"
+                  onClick={() => sendQuery(promptText)}
+                >
+                  {promptText}
+                </button>
+              ))}
+            </div>
+          )}
+
           {isSending && (
             <div
               className="adro-bubble-anim"
@@ -275,7 +378,7 @@ const ChatWidget = ({
           <div ref={messagesEndRef} />
         </div>
 
-        <form onSubmit={handleSend} style={{ padding: '12px 14px', background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <form onSubmit={handleFormSubmit} style={{ padding: '12px 14px', background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '8px', alignItems: 'center' }}>
           <input
             ref={inputRef}
             type="text"

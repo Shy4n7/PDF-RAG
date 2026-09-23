@@ -6,6 +6,13 @@
     greeting: "Hello! I am AdroBot, your assistant for AdroIT Technologies. How can I help you today with our courses, training programs, or company details?"
   };
 
+  const STARTER_PROMPTS = [
+    "What courses do you offer?",
+    "Tell me about placements",
+    "What is the course duration?",
+    "Company overview"
+  ];
+
   const ICONS = {
     chat: '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>',
     close: '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>',
@@ -47,6 +54,7 @@
         </div>
         <div class="adrobot-messages" id="adrobot-messages-box">
           <div class="adrobot-bubble adrobot-bubble-assistant">${this.config.greeting}</div>
+          <div class="adrobot-pills" id="adrobot-pills-box"></div>
         </div>
         <form class="adrobot-form" id="adrobot-form">
           <input type="text" class="adrobot-input" id="adrobot-input" placeholder="Ask about our courses, programs..." autocomplete="off" />
@@ -58,11 +66,34 @@
       document.body.appendChild(this.window);
 
       this.messagesContainer = this.window.querySelector("#adrobot-messages-box");
+      this.pillsContainer = this.window.querySelector("#adrobot-pills-box");
       this.input = this.window.querySelector("#adrobot-input");
       this.form = this.window.querySelector("#adrobot-form");
       this.sendButton = this.window.querySelector("#adrobot-send");
       this.resetButton = this.window.querySelector("#adrobot-btn-reset");
       this.closeButton = this.window.querySelector("#adrobot-btn-close");
+
+      this.renderPills();
+    }
+
+    renderPills() {
+      this.pillsContainer.innerHTML = "";
+      STARTER_PROMPTS.forEach((promptText) => {
+        const pill = document.createElement("button");
+        pill.type = "button";
+        pill.className = "adrobot-pill";
+        pill.textContent = promptText;
+        pill.addEventListener("click", () => {
+          this.input.value = promptText;
+          this.handleSend();
+        });
+        this.pillsContainer.appendChild(pill);
+      });
+      this.pillsContainer.classList.remove("adrobot-pills-hidden");
+    }
+
+    hidePills() {
+      this.pillsContainer.classList.add("adrobot-pills-hidden");
     }
 
     attachEvents() {
@@ -105,7 +136,12 @@
     }
 
     reset() {
-      this.messagesContainer.innerHTML = `<div class="adrobot-bubble adrobot-bubble-assistant">${this.config.greeting}</div>`;
+      this.messagesContainer.innerHTML = `
+        <div class="adrobot-bubble adrobot-bubble-assistant">${this.config.greeting}</div>
+        <div class="adrobot-pills" id="adrobot-pills-box"></div>
+      `;
+      this.pillsContainer = this.messagesContainer.querySelector("#adrobot-pills-box");
+      this.renderPills();
       this.input.value = "";
     }
 
@@ -123,6 +159,7 @@
       bubble.textContent = text;
       this.messagesContainer.appendChild(bubble);
       this.scrollToBottom();
+      return bubble;
     }
 
     showTyping() {
@@ -152,6 +189,7 @@
       const question = this.input.value.trim();
       if (!question || this.isSending) return;
 
+      this.hidePills();
       this.appendMessage(question, "user");
       this.input.value = "";
       this.isSending = true;
@@ -159,7 +197,7 @@
       this.showTyping();
 
       try {
-        const response = await fetch(`${this.config.apiUrl}/api/chat`, {
+        const response = await fetch(`${this.config.apiUrl}/api/chat/stream`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -167,19 +205,58 @@
           body: JSON.stringify({ question })
         });
 
-        const data = await response.json();
-        this.hideTyping();
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          this.hideTyping();
+          const detail = errData.detail || "Unable to get an answer right now. Please try again.";
+          this.appendMessage(detail, "assistant", true);
+          return;
+        }
 
-        if (response.ok && data.answer) {
-          this.appendMessage(data.answer, "assistant");
-        } else {
-          const errorMsg = data.detail || "Unable to get an answer right now. Please try again.";
-          this.appendMessage(errorMsg, "assistant", true);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let assistantBubble = null;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) continue;
+
+            const payloadStr = trimmed.slice(5).trim();
+            if (payloadStr === "[DONE]") continue;
+
+            try {
+              const data = JSON.parse(payloadStr);
+              if (data.token) {
+                if (!assistantBubble) {
+                  this.hideTyping();
+                  assistantBubble = document.createElement("div");
+                  assistantBubble.className = "adrobot-bubble adrobot-bubble-assistant";
+                  this.messagesContainer.appendChild(assistantBubble);
+                }
+                assistantBubble.textContent += data.token;
+                this.scrollToBottom();
+              } else if (data.error) {
+                this.hideTyping();
+                this.appendMessage(data.error, "assistant", true);
+              }
+            } catch (e) {
+            }
+          }
         }
       } catch (err) {
         this.hideTyping();
         this.appendMessage("Connection error. Please verify the chatbot server is running.", "assistant", true);
       } finally {
+        this.hideTyping();
         this.isSending = false;
         this.sendButton.disabled = false;
         this.input.focus();

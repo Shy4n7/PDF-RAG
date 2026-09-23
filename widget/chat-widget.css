@@ -222,6 +222,43 @@
   border: 1px solid #fecaca;
 }
 
+.adrobot-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0 8px 0;
+  animation: adrobotFadeIn 0.3s ease-out forwards;
+}
+
+.adrobot-pills.adrobot-pills-hidden {
+  display: none;
+}
+
+.adrobot-pill {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: var(--adrobot-text-main);
+  padding: 7px 12px;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.adrobot-pill:hover {
+  background: var(--adrobot-primary-light);
+  border-color: var(--adrobot-primary);
+  color: var(--adrobot-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(37, 99, 235, 0.15);
+}
+
+.adrobot-pill:active {
+  transform: translateY(0);
+}
+
 .adrobot-typing {
   align-self: flex-start;
   display: flex;
