@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AdroIT Technologies | Premier Technical Training</title>
+  <link rel="stylesheet" href="chat-widget.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      color: #1e293b;
+      background: #f8fafc;
+      line-height: 1.6;
+    }
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: #2563eb;
+      letter-spacing: -0.5px;
+    }
+    .logo span {
+      color: #0f172a;
+    }
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: #475569;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.15s ease;
+    }
+    .nav-links a:hover {
+      color: #2563eb;
+    }
+    .hero {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 80px 24px 60px;
+      text-align: center;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 14px;
+      background: #eff6ff;
+      color: #2563eb;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: 48px;
+      line-height: 1.15;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -1px;
+      max-width: 800px;
+      margin: 0 auto 20px;
+    }
+    .hero p {
+      font-size: 18px;
+      color: #64748b;
+      max-width: 640px;
+      margin: 0 auto 36px;
+    }
+    .cta-btn {
+      display: inline-block;
+      padding: 14px 28px;
+      background: #2563eb;
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 15px;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .cta-btn:hover {
+      background: #1d4ed8;
+      transform: translateY(-2px);
+    }
+    .cards-grid {
+      max-width: 1200px;
+      margin: 40px auto 80px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 28px;
+      transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.05);
+    }
+    .card h3 {
+      font-size: 19px;
+      color: #0f172a;
+      margin-bottom: 10px;
+    }
+    .card p {
+      font-size: 14.5px;
+      color: #64748b;
+    }
+    footer {
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      padding: 32px 24px;
+      text-align: center;
+      font-size: 13.5px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <div class="logo">AdroIT <span>Technologies</span></div>
+      <ul class="nav-links">
+        <li><a href="#about">About</a></li>
+        <li><a href="#programs">Programs</a></li>
+        <li><a href="#placements">Placements</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="badge">Legacy of Excellence Since 2000</div>
+      <h1>Empowering the Next Generation of Tech Leaders</h1>
+      <p>Bridging the skills gap between academia and industry through hands-on technical training, live projects, and placement assistance.</p>
+      <a href="#programs" class="cta-btn">Explore Training Programs</a>
+    </section>
+
+    <section class="cards-grid" id="programs">
+      <div class="card">
+        <h3>Full Stack Development</h3>
+        <p>Master modern web architectures with React, Node.js, Spring Boot, REST APIs, and microservices with production deployment.</p>
+      </div>
+      <div class="card">
+        <h3>AI & Machine Learning</h3>
+        <p>Comprehensive curriculum spanning Python, computer vision, natural language processing, and deep neural networks.</p>
+      </div>
+      <div class="card">
+        <h3>Cloud & DevOps Engineering</h3>
+        <p>Real-world training on AWS, Azure, Docker, Kubernetes, and CI/CD automation pipelines.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 AdroIT Technologies Innovative Solutions Pvt. Ltd. All rights reserved.</p>
+  </footer>
+
+  <script src="chat-widget.js"></script>
+</body>
+</html>

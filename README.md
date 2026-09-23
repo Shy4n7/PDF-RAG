@@ -1,76 +1,156 @@
 <img width="1774" height="887" alt="ChatGPT Image Aug 20, 2026, 03_27_10 PM" src="https://github.com/user-attachments/assets/6e52ae59-b1c5-4f55-a728-8e2d4675757e" />
 
+# AdroIT Technologies Chatbot Service
 
-
-## PDF RAG Chatbot
-
-A terminal-based Retrieval-Augmented Generation (RAG) chatbot built in Python. Load any PDF, embed it locally, and chat with it using Google Gemini as the language model.
-
-Built as a first RAG implementation to understand the full pipeline: ingestion, chunking, embedding, vector search, and generation.
-
-I specifically set it up to read a PDF about **AdroIT Technologies** (an IT training company), index it using a local FAISS database, and generate answers using the Google Gemini API.
-
-## How it works (under the hood)
-1. **Document Loading:** Reads `data/.pdf` using LlamaIndex's directory reader.
-2. **Text Chunking:** Splits the document pages into small, overlapping chunks (512 tokens size, 50 tokens overlap) so the AI gets the right context.
-3. **Local Vector Embeddings:** Uses the open-source `sentence-transformers/all-MiniLM-L6-v2` model to generate 384-dimensional vector representations of our text.
-4. **FAISS Vector Store:** Stores these vectors in a local flat Index (`faiss-cpu`) to do quick similarity searches and pull the top 3 matches for our query.
-5. **Generation (LLM):** Sends the matches along with our question to Google's `gemini-3.1-flash-lite` model to write a nice response.
+Production-ready RAG (Retrieval-Augmented Generation) backend service and embeddable chat widget for company landing pages. Built with FastAPI, LlamaIndex, FAISS, Google Gemini, and SlowAPI.
 
 ---
 
-## System Architecture
+## Directory Structure
 
-The following diagram illustrates the flow of data through the RAG pipeline, from ingestion to generation:
-
-```mermaid
-flowchart TD
-    A[data/.pdf] -->|SimpleDirectoryReader| B[Document Text]
-    B -->|SentenceSplitter: 512 size / 50 overlap| C[Text Chunks]
-    C -->|sentence-transformers/all-MiniLM-L6-v2| D[Embeddings: 384d]
-    D -->|Ingest| E[(FAISS Vector Store)]
-    
-    F[User Query] -->|Embed| G[Query Vector]
-    G -->|Similarity Search| E
-    E -->|Retrieve Top 3 Chunks| H[Context Chunks]
-    
-    H & F -->|Prompt Formulation| I[gemini-3.1-flash-lite]
-    I -->|Generate Response| J[Terminal Output]
+```text
+├── core/
+│   ├── config.py         # App configuration, constants, prompts
+│   └── rag.py            # FAISS vector store, streaming pipeline, health checks
+├── api/
+│   └── routes.py         # FastAPI endpoints, rate limiting, and SSE streaming
+├── widget/
+│   ├── chat-widget.js    # Embeddable vanilla JS chat widget (SSE streaming + pills)
+│   ├── chat-widget.css   # Widget styling & responsive pill buttons
+│   ├── ChatWidget.jsx    # React component version (SSE streaming + pills)
+│   └── demo.html         # Landing page integration demo
+├── data/                 # PDF knowledge base documents
+├── storage/              # Cached FAISS index and metadata
+├── app.py                # Main FastAPI entry point and static mounter
+├── requirements.txt      # Python dependencies
+├── .env.example          # Environment variables template
+└── README.md
 ```
 
 ---
 
-## Quick Start (How to Run it)
+## Setup & Running the Backend
 
-1. **Install requirements:**
-   Install dependencies globally using pip:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 1. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
 
-2. **Configure your API Key:**
-   Get a free Gemini API key from Google AI Studio. Create a `.env` file in the root directory and put it in:
-   ```env
-   GEMINI_API_KEY=your_key_here
-   ```
+### 2. Environment Configuration
+Create a `.env` file in the root directory:
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+CORS_ORIGINS=*
+```
 
-3. **Start the chat:**
-   ```bash
-   python chatbot.py
-   ```
-   To stop chatting, just type `exit` or `quit`.
-
----
-
-## Tech Stack
-- **LlamaIndex** (RAG Framework)
-- **FAISS (faiss-cpu)** (Vector Search Library)
-- **Sentence-Transformers** (Open-source Embedding Model)
-- **Google Gemini API** (Large Language Model)
-- **python-dotenv** (For reading configuration keys)
+### 3. Start the Server
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+```
+Interactive API documentation is accessible at `http://localhost:8000/docs`.
 
 ---
 
-## What I Learned
+## Features & Enterprise Architecture
 
-This project covers the full RAG loop end to end. The key insight is that the LLM does not answer from its training data. It answers from your document. The quality of the answer depends on how well the retrieval finds the right chunks, not just how good the LLM is. Chunking strategy and embedding model choice directly affect retrieval quality.
+1. **Token Streaming (Server-Sent Events / SSE)**:
+   - High-throughput response generation streamed token-by-token directly to the frontend.
+   - Lowers perceived time-to-first-token to under 300ms.
+2. **Interactive Starter Prompts (Pills)**:
+   - Floating suggestion chips (*"What courses do you offer?"*, *"Tell me about placements"*, etc.) displayed on initial greeting.
+   - Automatically collapses upon interaction.
+3. **IP Rate Limiting**:
+   - Built-in token-bucket rate limiting (15 requests per minute per IP address) powered by `slowapi` to protect API quotas.
+4. **Health & Readiness Probes**:
+   - `/api/health` validates index readiness and upstream dependencies for automated container orchestrator / load-balancer probes.
+
+---
+
+## Landing Page Integration
+
+### Option 1: Script Embed (Any Website / HTML / WordPress)
+Add the stylesheet to the `<head>` and the script before the closing `</body>` tag on your landing page:
+
+```html
+<link rel="stylesheet" href="http://localhost:8000/widget/chat-widget.css">
+
+<script src="http://localhost:8000/widget/chat-widget.js" data-api-url="http://localhost:8000"></script>
+```
+
+### Option 2: React Component (React / Next.js / Vite)
+Copy `widget/ChatWidget.jsx` into your components folder:
+
+```jsx
+import ChatWidget from './components/ChatWidget';
+
+function App() {
+  return (
+    <div className="landing-page">
+      <ChatWidget apiUrl="http://localhost:8000" />
+    </div>
+  );
+}
+```
+
+### Preview Demo
+With the server running, visit `http://localhost:8000/widget/demo.html` in your browser to test the interactive widget embedded in a landing page.
+
+---
+
+## API Endpoints
+
+### 1. Health & Readiness Probe
+- **Endpoint:** `GET /api/health`
+- **Response (HTTP 200 / 503):**
+  ```json
+  {
+    "status": "healthy",
+    "ready": true,
+    "vector_store": "ready",
+    "gemini_configured": true,
+    "indexed_documents": 1
+  }
+  ```
+
+### 2. Token Streaming Chat (Recommended)
+- **Endpoint:** `POST /api/chat/stream`
+- **Rate Limit:** 15 requests / minute / IP
+- **Request Body:**
+  ```json
+  {
+    "question": "What training programs are offered by AdroIT Technologies?"
+  }
+  ```
+- **Response (`text/event-stream`):**
+  ```text
+  data: {"token": "AdroIT"}
+
+  data: {"token": " Technologies"}
+
+  data: {"token": " offers"}
+
+  data: [DONE]
+  ```
+
+### 3. Synchronous Chat
+- **Endpoint:** `POST /api/chat`
+- **Rate Limit:** 15 requests / minute / IP
+- **Request Body:**
+  ```json
+  {
+    "question": "What training programs are offered by AdroIT Technologies?"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "answer": "AdroIT Technologies offers training programs in Full Stack Development, Data Science, AI, Cloud Computing, and DevOps."
+  }
+  ```
+
+---
+
+## Updating the Knowledge Base
+
+1. Place updated or new PDF files into the `data/` directory.
+2. The service automatically detects changes in `data/` and rebuilds the FAISS vector index in `storage/` on the next server start or query.

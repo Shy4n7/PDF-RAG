@@ -1,3 +1,5 @@
+fastapi
+uvicorn
 llama-index
 llama-index-embeddings-huggingface
 llama-index-vector-stores-faiss
