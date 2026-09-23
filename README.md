@@ -1,8 +1,50 @@
 <img width="1774" height="887" alt="ChatGPT Image Aug 20, 2026, 03_27_10 PM" src="https://github.com/user-attachments/assets/6e52ae59-b1c5-4f55-a728-8e2d4675757e" />
 
-# AdroIT Technologies Chatbot Service
+# PDF RAG Chatbot Service
 
-Production-ready RAG (Retrieval-Augmented Generation) backend service and embeddable chat widget for company landing pages. Built with FastAPI, LlamaIndex, FAISS, Google Gemini, and SlowAPI.
+A modular Retrieval-Augmented Generation (RAG) backend service and embeddable chat widget designed for website landing pages. Load any PDF document, index it using a local FAISS vector database, and chat with it in real-time via Google Gemini.
+
+---
+
+## System Architecture
+
+The following diagram illustrates the end-to-end RAG pipeline, from document ingestion to real-time token streaming in the landing page widget:
+
+```mermaid
+flowchart TD
+    A[data/*.pdf] -->|SimpleDirectoryReader| B[Document Text]
+    B -->|SentenceSplitter: 512 size / 50 overlap| C[Text Chunks]
+    C -->|sentence-transformers/all-MiniLM-L6-v2| D[Embeddings: 384d]
+    D -->|Ingest & Persist| E[(FAISS Vector Store)]
+
+    F[Landing Page Widget / API Query] -->|Embed Query| G[Query Vector]
+    G -->|Similarity Search| E
+    E -->|Retrieve Top 3 Chunks| H[Context Chunks]
+
+    H & F -->|Prompt Formulation| I[Google Gemini API]
+    I -->|SSE Word Streaming| J[Embeddable Chat Widget]
+```
+
+---
+
+## Implementation Pipeline
+
+1. **Document Loading**: Reads PDF documents from `data/` using LlamaIndex directory reader.
+2. **Text Chunking**: Splits document pages into overlapping segments (512 token size, 50 token overlap) to preserve contextual boundaries.
+3. **Local Vector Embeddings**: Uses `sentence-transformers/all-MiniLM-L6-v2` to generate 384-dimensional dense vector embeddings locally without third-party embedding API costs.
+4. **FAISS Vector Index**: Stores and searches vectors via a local flat Index (`faiss-cpu`), performing similarity search to retrieve the top 3 most relevant context chunks.
+5. **Caching & Rebuild Detection**: Tracks document checksums in `storage/indexed_files.json`. Skips embedding on startup if files have not changed, enabling sub-second server boot times.
+6. **Generation & SSE Streaming**: Formulates a structured system prompt combining retrieved context and user query, queries `gemini-3.1-flash-lite`, and streams tokens word-by-word over Server-Sent Events (SSE).
+
+---
+
+## Core Features
+
+- **Token Streaming (Server-Sent Events / SSE)**: Delivers answers word-by-word with instant time-to-first-token, eliminating waiting periods for users.
+- **Interactive Starter Prompts (Pills)**: Clickable suggestion chips displayed on greeting for instant 1-click questions, auto-collapsing during active chat.
+- **IP Rate Limiting**: Token-bucket rate limiting (15 requests per minute per IP address) powered by `slowapi` to protect API quotas against abuse.
+- **Health & Readiness Probes**: Comprehensive `/api/health` endpoint returning vector store status, doc count, and readiness status for load balancers.
+- **Embeddable Chat Widget**: Drop-in vanilla JS widget (zero external dependencies) and React component for landing page integration.
 
 ---
 
@@ -29,21 +71,21 @@ Production-ready RAG (Retrieval-Augmented Generation) backend service and embedd
 
 ---
 
-## Setup & Running the Backend
+## Quick Start
 
 ### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Environment Configuration
+### 2. Configure Environment
 Create a `.env` file in the root directory:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 CORS_ORIGINS=*
 ```
 
-### 3. Start the Server
+### 3. Launch Server
 ```bash
 uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 ```
@@ -51,25 +93,10 @@ Interactive API documentation is accessible at `http://localhost:8000/docs`.
 
 ---
 
-## Features & Enterprise Architecture
-
-1. **Token Streaming (Server-Sent Events / SSE)**:
-   - High-throughput response generation streamed token-by-token directly to the frontend.
-   - Lowers perceived time-to-first-token to under 300ms.
-2. **Interactive Starter Prompts (Pills)**:
-   - Floating suggestion chips (*"What courses do you offer?"*, *"Tell me about placements"*, etc.) displayed on initial greeting.
-   - Automatically collapses upon interaction.
-3. **IP Rate Limiting**:
-   - Built-in token-bucket rate limiting (15 requests per minute per IP address) powered by `slowapi` to protect API quotas.
-4. **Health & Readiness Probes**:
-   - `/api/health` validates index readiness and upstream dependencies for automated container orchestrator / load-balancer probes.
-
----
-
 ## Landing Page Integration
 
-### Option 1: Script Embed (Any Website / HTML / WordPress)
-Add the stylesheet to the `<head>` and the script before the closing `</body>` tag on your landing page:
+### Option 1: Script Embed (HTML / Any Website)
+Include the stylesheet in `<head>` and the script before `</body>`:
 
 ```html
 <link rel="stylesheet" href="http://localhost:8000/widget/chat-widget.css">
@@ -78,7 +105,7 @@ Add the stylesheet to the `<head>` and the script before the closing `</body>` t
 ```
 
 ### Option 2: React Component (React / Next.js / Vite)
-Copy `widget/ChatWidget.jsx` into your components folder:
+Import `widget/ChatWidget.jsx` into your layout:
 
 ```jsx
 import ChatWidget from './components/ChatWidget';
@@ -118,16 +145,14 @@ With the server running, visit `http://localhost:8000/widget/demo.html` in your 
 - **Request Body:**
   ```json
   {
-    "question": "What training programs are offered by AdroIT Technologies?"
+    "question": "What courses and skill levels do you offer?"
   }
   ```
 - **Response (`text/event-stream`):**
   ```text
-  data: {"token": "AdroIT"}
+  data: {"token": "We "}
 
-  data: {"token": " Technologies"}
-
-  data: {"token": " offers"}
+  data: {"token": "offer "}
 
   data: [DONE]
   ```
@@ -138,13 +163,13 @@ With the server running, visit `http://localhost:8000/widget/demo.html` in your 
 - **Request Body:**
   ```json
   {
-    "question": "What training programs are offered by AdroIT Technologies?"
+    "question": "What services do you provide?"
   }
   ```
 - **Response:**
   ```json
   {
-    "answer": "AdroIT Technologies offers training programs in Full Stack Development, Data Science, AI, Cloud Computing, and DevOps."
+    "answer": "We provide specialized training programs, certifications, and technical consulting."
   }
   ```
 
