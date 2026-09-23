@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from typing import Generator
 import faiss
 from llama_index.core import (
@@ -77,8 +78,7 @@ def get_query_engine():
     qa_template = PromptTemplate(QA_PROMPT_TEMPLATE_STR)
     _query_engine = index.as_query_engine(
         text_qa_template=qa_template,
-        similarity_top_k=SIMILARITY_TOP_K,
-        streaming=True
+        similarity_top_k=SIMILARITY_TOP_K
     )
     return _query_engine
 
@@ -86,8 +86,6 @@ def ask_rag(question: str) -> str:
     engine = get_query_engine()
     try:
         response = engine.query(question)
-        if hasattr(response, "response_gen"):
-            return "".join(response.response_gen).strip()
         return str(response.response).strip()
     except Exception as e:
         error_message = str(e)
@@ -99,12 +97,12 @@ def stream_rag(question: str) -> Generator[str, None, None]:
     engine = get_query_engine()
     try:
         response = engine.query(question)
-        if hasattr(response, "response_gen"):
-            for token in response.response_gen:
-                yield f"data: {json.dumps({'token': token})}\n\n"
-        else:
-            text = str(response.response).strip()
-            yield f"data: {json.dumps({'token': text})}\n\n"
+        full_text = str(response.response).strip()
+        words = full_text.split(" ")
+        for index, word in enumerate(words):
+            token = word if index == len(words) - 1 else word + " "
+            yield f"data: {json.dumps({'token': token})}\n\n"
+            time.sleep(0.025)
         yield "data: [DONE]\n\n"
     except Exception as e:
         error_message = str(e)

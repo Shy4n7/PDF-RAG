@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 
 const STARTER_PROMPTS = [
-  "What courses do you offer?",
-  "Tell me about placements",
-  "What is the course duration?",
-  "Company overview"
+  "What courses and skill levels do you offer?",
+  "Who are your industrial partners?",
+  "What software products does AdroIT develop?",
+  "What services do you provide to colleges and companies?"
 ];
 
 const ChatWidget = ({
